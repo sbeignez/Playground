@@ -1,17 +1,23 @@
-from locale import ABDAY_1
-import pygame
+import copy
 import random
+import math
 
 class Env:
     pass
 
 class TicTacToe(Env):
+
+    BOARD_EMPTY = " "
+    BOARD_X = "X"
+    BOARD_O = "O"
     
     def __init__(self):
-        self.board = [[" " for _ in range(3)] for _ in range(3)]
-        self.players = ["X", "O"]
+        self.board = [[TicTacToe.BOARD_EMPTY for _ in range(3)] for _ in range(3)]
+        self.players = [
+                (TicTacToe.BOARD_X, HumanAgent()),
+                (TicTacToe.BOARD_O, BasicAgent()),
+            ]
         self.player = self.players[0]
-        self.agent = Agent()
 
     def reset(self):
         pass
@@ -20,13 +26,15 @@ class TicTacToe(Env):
         obs, reward, done, info = None, 0, False, {}
         
         #update model
-        self.board[row][col] = self.player
+        self.board[row][col] = self.player[0]
 
-        if self.is_win():
+        if self.check_win(self.player[0]):
             reward = 1 # or -1
             done = True
 
         return self.board, reward, done, info
+
+
 
     def display(self):
         print("")
@@ -37,21 +45,20 @@ class TicTacToe(Env):
         print("    A   B   C  ")
         print("")
 
-
-    def is_win(self):
+    def check_win(self, player_mark):
         b = self.board
-        # print("is_win rows", [sum( 1 if b[r][c] == self.player else 0 for c in range(3)) for r in range(3)])
-        # print("is_win cols", [sum( 1 if b[r][c] == self.player else 0 for r in range(3)) for c in range(3)])
         win = max(
-            [sum( 1 if b[r][c] == self.player else 0 for c in range(3)) for r in range(3)] +
-            [sum( 1 if b[r][c] == self.player else 0 for r in range(3)) for c in range(3)] +
-            [sum( [1 if b[i][i] == self.player else 0 for i in range(3)] )] +
-            [sum( [1 if b[i][2-i] == self.player else 0 for i in range(3)] )] 
+            [sum( 1 if b[r][c] == player_mark else 0 for c in range(3)) for r in range(3)] +
+            [sum( 1 if b[r][c] == player_mark else 0 for r in range(3)) for c in range(3)] +
+            [sum( [1 if b[i][i] == player_mark else 0 for i in range(3)] )] +
+            [sum( [1 if b[i][2-i] == player_mark else 0 for i in range(3)] )] 
         )
         return win == 3
 
+
+
     def is_valid_action(self, row, col):
-        return self.board[row][col] == " "
+        return self.board[row][col] == TicTacToe.BOARD_EMPTY
 
     def cell_to_rowcol(cell):
         cell = cell.upper()
@@ -67,8 +74,8 @@ class TicTacToe(Env):
         
 
     def next_player(self):
-        i = self.players.index(self.player)     
-        self.player = self.players[(i+1) % len(self.players)]
+        # i = self.players.index(self.player)     
+        self.player = [p for p in self.players if p is not self.player][0]
 
     def start(self):
         print("")
@@ -79,64 +86,181 @@ class TicTacToe(Env):
 
         while not done:
 
-            move = False
-            while not move:
+            if self.player[0] == TicTacToe.BOARD_X: 
+                m = self.player[1].next_move(self)
+            else:
+                m = self.player[1].next_move(self)
+                print(f"[{self.player[0]}] plays: {m}")
 
-                if self.player == "X":    
-                    m = input(f"[{self.player}] plays: ")
-                else:
-                    m = self.agent.next_move(self.board)
-                    print(f"[{self.player}] plays: {m}")
-
-                is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
-                if is_valid_cell:
-                    if self.is_valid_action(m_row, m_col):
-                        move = True
-                    else:
-                        print_alert("INVALID CELL")
-                        print_alert(m + " is occupied")
-                        print_alert("Try again")
-                else:
-                    print_alert("INVALID INPUT")
-                    print_alert("Valid: A1, b2, C3...")
-                    print_alert("Try again")
+            is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
             
             _, reward, done, _ = self.step(m_row, m_col)
-
 
             self.display()
 
             if done:
                 print("")
                 print("+---------------+")                
-                print(f"| Player {self.player} wins |")
+                print(f"| Player {self.player[0]} wins |")
                 print("+---------------+")
                 print("")
 
             self.next_player()
+
+    ## GLOBAL PART
+
+    def result(state, action):
+        board, player = state
+        _, row, col = TicTacToe.cell_to_rowcol(action)
+        new_board = copy.deepcopy(board)
+        new_board[row][col] = player
+        new_state = (new_board, TicTacToe.other_player(player))
+        return new_state
+
+    def other_player(player):
+        return TicTacToe.BOARD_O if player == TicTacToe.BOARD_X else TicTacToe.BOARD_X
+
+    def actions(state):
+        board, player = state
+        cells = [ (r,c) for r in range(3) for c in range(3)] 
+        actions = [ TicTacToe.rowcol_to_cell(row, col) for row, col in cells if board[row][col] == " "]
+        return actions
+
+    def utility(state, a_player):
+        board, player = state
+        another_state = (board, a_player)
+        if TicTacToe.is_terminal(another_state):
+            if TicTacToe.is_win(another_state):
+                return 1
+            if TicTacToe.is_lose(another_state):
+                return -1
+            if TicTacToe.is_draw(another_state):
+                return 0
+        else:
+            print("ERROR: utility called on non-terminal state")
+            return None
+
+    def is_terminal(state):
+        return TicTacToe.is_win(state) or TicTacToe.is_lose(state) or TicTacToe.is_draw(state)
+
+    def is_win(state):
+        b, player = state
+        win = max(
+            [sum( 1 if b[r][c] == player else 0 for c in range(3)) for r in range(3)] +
+            [sum( 1 if b[r][c] == player else 0 for r in range(3)) for c in range(3)] +
+            [sum( [1 if b[i][i] == player else 0 for i in range(3)] )] +
+            [sum( [1 if b[i][2-i] == player else 0 for i in range(3)] )] 
+        )
+        return win == 3
+
+    def is_lose(state):
+        board, player = state
+        return TicTacToe.is_win( (board, TicTacToe.other_player(player)) )
+
+    def is_draw(state):
+        board, player = state
+        return not any( [ TicTacToe.BOARD_EMPTY in row for row in board] )
+
+    def printme(state):
+        board, player = state
+        print("  +" + "-"*11 + "+")
+        for i, row in enumerate(board):
+            print(str(3-i) + " | " + " | ".join(row) + " |")
+            print("  +" + "-"*11 + "+")
+        print("    A   B   C  ")
+
+
 
 def print_alert(s):
     print("   <<< "+ s.center(25) + " >>>")
 
 
 class Agent:
-    
     def __init__(self):
         pass
 
     def next_move(self, board):
+        pass
 
-        cells = [ (r,c) for r in range(3) for c in range(3)] 
-        moves = [ TicTacToe.rowcol_to_cell(row, col) for row, col in cells if board[row][col] == " "]
+class BasicAgent(Agent):
+    
+    def __init__(self):
+        self.epsilon = 0.0
+        pass
+
+    def next_move(self, game):
         
-        # print(len(moves), moves)
-
-        move = random.choice(moves)
+        coin = random.uniform(0, 1)
+        if coin < self.epsilon:
+            moves = TicTacToe.actions((game.board, game.player[0]))
+            move = random.choice(moves)
+            print("random")
+        else:
+            state = copy.deepcopy(game.board), game.player[0]
+            value, move = BasicAgent.minimax_search(game, state)
+            print("minimax: " + str(value) + " " + move)
         return move
 
+    def minimax_search(game, state):        
+        value, move = BasicAgent.max_value(game, state)
+        return value, move
 
+    def max_value(game, state):
+        if TicTacToe.is_terminal(state):
+            # print("terminal max " + str(TicTacToe.utility(state, TicTacToe.BOARD_O)))
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None
+        v = -math.inf
+        move = None
+        # print(TicTacToe.actions(state))
+        for action in TicTacToe.actions(state):
+            v_child, a = BasicAgent.min_value(game, TicTacToe.result(state, action))
+            if v_child > v:
+                v = v_child
+                move = action
+        return v, move
+
+    def min_value(game, state):
+        if TicTacToe.is_terminal(state):      
+            # print("terminal min " + str(TicTacToe.utility(state, TicTacToe.BOARD_O)))
+            # TicTacToe.printme(state)
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None
+        v = math.inf
+        move = None
+        for action in TicTacToe.actions(state):
+            v_child, _ = BasicAgent.max_value(game, TicTacToe.result(state, action))
+            if v_child < v:
+                v = v_child
+                move = action
+        return v, move
+        
+
+class HumanAgent(Agent):
+
+    def __init__(self):
+        pass
+
+    def next_move(self, game):
+        move = None
+        while move is None:
+            m = input("Your move: ")
+            is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
+            if is_valid_cell:
+                if game.is_valid_action(m_row, m_col):
+                    move = m
+                else:
+                    print_alert("INVALID CELL")
+                    print_alert(m + " is occupied")
+                    print_alert("Try again")
+            else:
+                print_alert("INVALID INPUT")
+                print_alert("Valid: A1, b2, C3...")
+                print_alert("Try again")
+        return move
  
 
 
 env = TicTacToe()
 env.start()
+
+
+
