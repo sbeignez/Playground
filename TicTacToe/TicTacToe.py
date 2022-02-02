@@ -17,7 +17,7 @@ class TicTacToe(Env):
                 (TicTacToe.BOARD_X, HumanAgent()),
                 (TicTacToe.BOARD_O, BasicAgent()),
             ]
-        self.player = self.players[0]
+        self.player = self.players[random.randint(0,1)]
 
     def reset(self):
         pass
@@ -30,6 +30,10 @@ class TicTacToe(Env):
 
         if self.check_win(self.player[0]):
             reward = 1 # or -1
+            done = True
+
+        if TicTacToe.is_draw((self.board, self.player[0])):
+            reward = 0
             done = True
 
         return self.board, reward, done, info
@@ -90,7 +94,7 @@ class TicTacToe(Env):
                 m = self.player[1].next_move(self)
             else:
                 m = self.player[1].next_move(self)
-                print(f"[{self.player[0]}] plays: {m}")
+                print(f"[Player {self.player[0]}] played: {m}")
 
             is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
             
@@ -98,12 +102,20 @@ class TicTacToe(Env):
 
             self.display()
 
-            if done:
+            if done and reward == 1:
                 print("")
                 print("+---------------+")                
                 print(f"| Player {self.player[0]} wins |")
                 print("+---------------+")
                 print("")
+
+            if done and reward == 0:
+                print("")
+                print( "+---------------+")                
+                print(f"|  Draw game!   |")
+                print( "+---------------+")
+                print("")
+
 
             self.next_player()
 
@@ -124,6 +136,7 @@ class TicTacToe(Env):
         board, player = state
         cells = [ (r,c) for r in range(3) for c in range(3)] 
         actions = [ TicTacToe.rowcol_to_cell(row, col) for row, col in cells if board[row][col] == " "]
+        random.shuffle(actions)
         return actions
 
     def utility(state, a_player):
@@ -185,7 +198,7 @@ class Agent:
 class BasicAgent(Agent):
     
     def __init__(self):
-        self.epsilon = 0.0
+        self.epsilon = 0.00
         pass
 
     def next_move(self, game):
@@ -194,11 +207,11 @@ class BasicAgent(Agent):
         if coin < self.epsilon:
             moves = TicTacToe.actions((game.board, game.player[0]))
             move = random.choice(moves)
-            print("random")
+            print("Random move. ", end="")
         else:
             state = copy.deepcopy(game.board), game.player[0]
             value, move = BasicAgent.minimax_search(game, state)
-            print("minimax: " + str(value) + " " + move)
+            print("Minimax(" + str(value) + "). ", end="")
         return move
 
     def minimax_search(game, state):        
@@ -207,11 +220,9 @@ class BasicAgent(Agent):
 
     def max_value(game, state):
         if TicTacToe.is_terminal(state):
-            # print("terminal max " + str(TicTacToe.utility(state, TicTacToe.BOARD_O)))
             return TicTacToe.utility(state, TicTacToe.BOARD_O), None
         v = -math.inf
         move = None
-        # print(TicTacToe.actions(state))
         for action in TicTacToe.actions(state):
             v_child, a = BasicAgent.min_value(game, TicTacToe.result(state, action))
             if v_child > v:
@@ -221,8 +232,6 @@ class BasicAgent(Agent):
 
     def min_value(game, state):
         if TicTacToe.is_terminal(state):      
-            # print("terminal min " + str(TicTacToe.utility(state, TicTacToe.BOARD_O)))
-            # TicTacToe.printme(state)
             return TicTacToe.utility(state, TicTacToe.BOARD_O), None
         v = math.inf
         move = None
@@ -232,7 +241,56 @@ class BasicAgent(Agent):
                 v = v_child
                 move = action
         return v, move
-        
+
+
+class ExpectimaxAgent(Agent):
+    
+    def __init__(self):
+        self.epsilon = 0.05
+        pass
+
+    def next_move(self, game):
+        state = copy.deepcopy(game.board), game.player[0]
+        value, move, exp = ExpectimaxAgent.minimax_search(game, state)
+        print(f"Max({value} Exp({exp}) ", end="")
+        return move
+
+    def minimax_search(game, state):        
+        value, move, exp = ExpectimaxAgent.max_value(game, state)
+        return value, move, exp
+
+    def max_value(game, state):
+        if TicTacToe.is_terminal(state):
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, 1
+        v = -math.inf
+        move = None
+        options = []
+        for action in TicTacToe.actions(state):
+            v_child, a, exp = ExpectimaxAgent.min_value(game, TicTacToe.result(state, action))
+            options.append([action, v, exp])
+        exp = sum(exps) / len(exps)
+        return v, move, exp
+
+    def min_value(game, state):
+        if TicTacToe.is_terminal(state):      
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, 1
+        v = math.inf
+        move = None
+        exps =[]
+        for action in TicTacToe.actions(state):
+            v_child, a, exp = ExpectimaxAgent.max_value(game, TicTacToe.result(state, action))
+            exps.append(exp)
+            if v_child < v:
+                v = v_child
+                move = action
+        exp = sum(exps) / len(exps)
+        return v, move, exp
+
+    def pick_best_action(options):
+        max_utility = max([ options[1] for option in options ])
+
+        return [ option for option in options if option[1] == max_utility ][0]
+
 
 class HumanAgent(Agent):
 
@@ -241,8 +299,9 @@ class HumanAgent(Agent):
 
     def next_move(self, game):
         move = None
+        player = game.player[0]
         while move is None:
-            m = input("Your move: ")
+            m = input(f"Your move {player}? ")
             is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
             if is_valid_cell:
                 if game.is_valid_action(m_row, m_col):
