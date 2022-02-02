@@ -15,7 +15,7 @@ class TicTacToe(Env):
         self.board = [[TicTacToe.BOARD_EMPTY for _ in range(3)] for _ in range(3)]
         self.players = [
                 (TicTacToe.BOARD_X, HumanAgent()),
-                (TicTacToe.BOARD_O, BasicAgent()),
+                (TicTacToe.BOARD_O, ChanceMinimaxAgent()),
             ]
         self.player = self.players[random.randint(0,1)]
 
@@ -195,55 +195,77 @@ class Agent:
     def next_move(self, board):
         pass
 
-class BasicAgent(Agent):
+
+class RandomAgent(Agent):
+    def __init__(self):
+        super().__init__()
+
+    def next_move(self, game):
+        print("Random move. ", end="")
+        return random.choice(game.board.actions())
+
+class CompositeAgent(Agent):
+
+    def __init__(self, agents):
+        super().__init__()
+        self.agents = agents
+
+    def next_move(self, game):
+        self.epsilon = 0.1
+        coin = random.uniform(0, 1)
+        if coin < self.epsilon:
+            pass
+
+        return random.choice(self.agents).next_move(game)
+
+
+class MinimaxAgent(Agent):
+
+    count = 0
     
     def __init__(self):
-        self.epsilon = 0.00
-        pass
+        super().__init__()
 
     def next_move(self, game):
         
-        coin = random.uniform(0, 1)
-        if coin < self.epsilon:
-            moves = TicTacToe.actions((game.board, game.player[0]))
-            move = random.choice(moves)
-            print("Random move. ", end="")
-        else:
-            state = copy.deepcopy(game.board), game.player[0]
-            value, move = BasicAgent.minimax_search(game, state)
-            print("Minimax(" + str(value) + "). ", end="")
+        state = copy.deepcopy(game.board), game.player[0]
+        value, move = MinimaxAgent.minimax_search(game, state)
+        print("Minimax(" + str(value) + ") " + str(MinimaxAgent.count) + " ", end="")
         return move
 
-    def minimax_search(game, state):        
-        value, move = BasicAgent.max_value(game, state)
+    def minimax_search(game, state):
+        MinimaxAgent.count = 0       
+        value, move = MinimaxAgent.max_value(game, state)
         return value, move
 
     def max_value(game, state):
         if TicTacToe.is_terminal(state):
+            MinimaxAgent.count += 1
             return TicTacToe.utility(state, TicTacToe.BOARD_O), None
         v = -math.inf
         move = None
         for action in TicTacToe.actions(state):
-            v_child, a = BasicAgent.min_value(game, TicTacToe.result(state, action))
+            v_child, a = MinimaxAgent.min_value(game, TicTacToe.result(state, action))
             if v_child > v:
                 v = v_child
                 move = action
         return v, move
 
-    def min_value(game, state):
+    def min_value(game, state): 
         if TicTacToe.is_terminal(state):      
+            MinimaxAgent.count += 1 
             return TicTacToe.utility(state, TicTacToe.BOARD_O), None
         v = math.inf
         move = None
         for action in TicTacToe.actions(state):
-            v_child, _ = BasicAgent.max_value(game, TicTacToe.result(state, action))
+            v_child, _ = MinimaxAgent.max_value(game, TicTacToe.result(state, action))
             if v_child < v:
                 v = v_child
                 move = action
         return v, move
 
 
-class ExpectimaxAgent(Agent):
+class ChanceMinimaxAgent(Agent):
     
     def __init__(self):
         self.epsilon = 0.05
@@ -251,45 +273,43 @@ class ExpectimaxAgent(Agent):
 
     def next_move(self, game):
         state = copy.deepcopy(game.board), game.player[0]
-        value, move, exp = ExpectimaxAgent.minimax_search(game, state)
-        print(f"Max({value} Exp({exp}) ", end="")
+        value, move, exp = ChanceMinimaxAgent.minimax_search(game, state)
+        print(f"Max({value}) Exp({exp}) ", end="")
         return move
 
     def minimax_search(game, state):        
-        value, move, exp = ExpectimaxAgent.max_value(game, state)
+        value, move, exp = ChanceMinimaxAgent.max_value(game, state)
         return value, move, exp
 
     def max_value(game, state):
         if TicTacToe.is_terminal(state):
-            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, 1
-        v = -math.inf
-        move = None
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, TicTacToe.utility(state, TicTacToe.BOARD_O)
         options = []
         for action in TicTacToe.actions(state):
-            v_child, a, exp = ExpectimaxAgent.min_value(game, TicTacToe.result(state, action))
-            options.append([action, v, exp])
-        exp = sum(exps) / len(exps)
+            v_child, a, exp = ChanceMinimaxAgent.min_value(game, TicTacToe.result(state, action))
+            options.append([v_child, action, exp])
+        v, move, exp = ChanceMinimaxAgent.pick_best_action(options, max=True)
         return v, move, exp
 
     def min_value(game, state):
         if TicTacToe.is_terminal(state):      
-            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, 1
-        v = math.inf
-        move = None
-        exps =[]
+            return TicTacToe.utility(state, TicTacToe.BOARD_O), None, TicTacToe.utility(state, TicTacToe.BOARD_O)
+        options = []
         for action in TicTacToe.actions(state):
-            v_child, a, exp = ExpectimaxAgent.max_value(game, TicTacToe.result(state, action))
-            exps.append(exp)
-            if v_child < v:
-                v = v_child
-                move = action
-        exp = sum(exps) / len(exps)
+            v_child, a, exp = ChanceMinimaxAgent.max_value(game, TicTacToe.result(state, action))
+            options.append([v_child, action, exp])
+        v, move, exp = ChanceMinimaxAgent.pick_best_action(options, max=False)
         return v, move, exp
 
-    def pick_best_action(options):
-        max_utility = max([ options[1] for option in options ])
-
-        return [ option for option in options if option[1] == max_utility ][0]
+    def pick_best_action(options, max): # -> v, action, exp
+        # print(options)
+        options.sort(key=lambda x: (x[0] , x[2]), reverse= not max)
+        #print(max, options)
+        v, action, _ = options[-1]
+        exp = sum([x[2] for x in options]) / len(options)
+        #print(v, action, exp)
+        #input()
+        return v, action, exp
 
 
 class HumanAgent(Agent):
