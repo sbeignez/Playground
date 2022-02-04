@@ -1,6 +1,8 @@
 import copy
 import random
 import math
+import time
+from tictactoe_ui import UI
 
 class Env:
     pass
@@ -19,6 +21,11 @@ class TicTacToe(Env):
             ]
         self.player = self.players[random.randint(0,1)]
 
+        self.display_mode = ["Text", "GUI"][1]
+
+        if self.display_mode == "GUI":
+            self.ui = UI()
+
     def reset(self):
         pass
 
@@ -31,8 +38,7 @@ class TicTacToe(Env):
         if self.check_win(self.player[0]):
             reward = 1 # or -1
             done = True
-
-        if TicTacToe.is_draw((self.board, self.player[0])):
+        elif TicTacToe.is_draw((self.board, self.player[0])):
             reward = 0
             done = True
 
@@ -41,6 +47,12 @@ class TicTacToe(Env):
 
 
     def display(self):
+        if self.display_mode == "GUI":
+            self.ui.draw_ui(self)
+        else:
+            self.display_text()
+
+    def display_text(self):
         print("")
         print("  +" + "-"*11 + "+")
         for i, row in enumerate(self.board):
@@ -62,9 +74,15 @@ class TicTacToe(Env):
 
 
     def is_valid_action(self, row, col):
-        return self.board[row][col] == TicTacToe.BOARD_EMPTY
+        if row is not None and col is not None and row >= 0 and row <= 2 and col >= 0 and col <= 2:
+            return self.board[row][col] == TicTacToe.BOARD_EMPTY
+        else:
+            return False
+            
 
     def cell_to_rowcol(cell):
+        if not cell:
+            return False, None, None
         cell = cell.upper()
         if len(cell) == 2 and cell[0] in ["A", "B", "C"] and cell[1] in ["1", "2", "3"]:
             row = ["3", "2", "1"].index(cell[1])
@@ -90,16 +108,15 @@ class TicTacToe(Env):
 
         while not done:
 
-            if self.player[0] == TicTacToe.BOARD_X: 
-                m = self.player[1].next_move(self)
-            else:
-                m = self.player[1].next_move(self)
-                print(f"[Player {self.player[0]}] played: {m}")
+            print(f"Player [{self.player[0]}] Turn")
+            m = self.player[1].next_move(self)
+            print(f"  Player [{self.player[0]}] played: {m}")
 
             is_valid_cell, m_row, m_col = TicTacToe.cell_to_rowcol(m)
             
             _, reward, done, _ = self.step(m_row, m_col)
 
+            self.next_player()
             self.display()
 
             if done and reward == 1:
@@ -116,8 +133,9 @@ class TicTacToe(Env):
                 print( "+---------------+")
                 print("")
 
+            
 
-            self.next_player()
+        time.sleep(2)
 
     ## GLOBAL PART
 
@@ -190,6 +208,7 @@ def print_alert(s):
 
 class Agent:
     def __init__(self):
+        self.name = None
         pass
 
     def next_move(self, board):
@@ -225,6 +244,7 @@ class MinimaxAgent(Agent):
     
     def __init__(self):
         super().__init__()
+        self.name = "Minimax"
 
     def next_move(self, game):
         
@@ -269,12 +289,15 @@ class ChanceMinimaxAgent(Agent):
     
     def __init__(self):
         self.epsilon = 0.05
+        self.name = "ChanceMinimax"
         pass
 
     def next_move(self, game):
         state = copy.deepcopy(game.board), game.player[0]
         value, move, exp = ChanceMinimaxAgent.minimax_search(game, state)
         print(f"Max({value}) Exp({exp}) ", end="")
+        # I pretend to think
+        time.sleep(1)
         return move
 
     def minimax_search(game, state):        
@@ -315,10 +338,19 @@ class ChanceMinimaxAgent(Agent):
 class HumanAgent(Agent):
 
     def __init__(self):
+        self.name = "Human"
         pass
 
     def next_move(self, game):
         move = None
+
+        if game.display_mode == "Text":
+            return self.input_move_text(game)
+        elif game.display_mode == "GUI":
+            return self.input_move_gui(game)
+
+ 
+    def input_move_text(self, game):
         player = game.player[0]
         while move is None:
             m = input(f"Your move {player}? ")
@@ -335,7 +367,15 @@ class HumanAgent(Agent):
                 print_alert("Valid: A1, b2, C3...")
                 print_alert("Try again")
         return move
- 
+
+    def input_move_gui(self, game):
+        move = None
+        while move is None:
+            row, col = game.ui.get_cell()
+            if game.is_valid_action(row, col):
+                move = TicTacToe.rowcol_to_cell(row, col)
+                print(move)
+        return move
 
 
 env = TicTacToe()
