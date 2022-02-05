@@ -19,18 +19,18 @@ class UI():
     COLOR_CELL_ODD = (36, 36, 40)
     COLOR_SCORE = (200, 200, 200)
 
-    COLOR_O = (200, 200, 200)
-    COLOR_O_BORDER = (250, 250, 250)
-    COLOR_X = (150, 150, 150)
-    COLOR_X_BORDER = (250, 250, 250)
+    COLOR_O = (63, 200, 243)
+    COLOR_O_SHADOW = (36, 126, 158)
+    COLOR_X = (255, 95, 95)
+    COLOR_X_SHADOW = (180, 70, 70)
 
 
 
-    def __init__(self):
+    def __init__(self, theme="default"):
 
         # self.game = game
 
-        self.style = ["flat", "img"][0]
+        self.theme = theme
 
         self.rows = 3
         self.cols = 3
@@ -58,75 +58,90 @@ class UI():
         self.erase_ui()
 
         # Draw UI elements
-        self.draw_board()
-        self.draw_pieces(game)
+        self.draw_board(theme=self.theme)
+        self.draw_pieces(game, theme=self.theme)
         self.draw_score(game)
 
         # self.get_keyboard_events()
         # Update Diplay
         pygame.display.update()
 
+
     def erase_ui(self):
         pygame.display.get_surface().fill(self.COLOR_BOARD)
 
-    def draw_board(self):
-        image_odd = pygame.image.load('TicTacToe/img/wood_1.jpeg')
-        image_odd = pygame.transform.scale(image_odd, (100, 100))
-        image_even = pygame.image.load('TicTacToe/img/wood_2.jpeg')
-        image_even = pygame.transform.scale(image_even, (100, 100))
 
+    def draw_board(self, theme="default"):
+        # draw board
+        if not theme == "default":
+            size_x_px, size_y_px = UI.SCALE * self.cols, UI.SCALE * self.rows
+            try:
+                image_board = pygame.image.load(f"TicTacToe/img/board-{theme}.png")
+                image_board = pygame.transform.scale(image_board, (size_x_px, size_y_px))
+                self.window.blit(image_board, (0,0))
+            except:
+                pass
+        # draw cells
         for r in range(self.rows):
             for c in range(self.cols):
-                color = self.COLOR_CELL_EVEN if ((r + c) % 2) == 0 else self.COLOR_CELL_ODD
-                self.draw_cell(c, r, color)
-
-                if self.style == "img":
-                    image = image_even if ((r + c) % 2) == 0 else image_odd
-                    self.draw_cell_image(c, r, image)
+                even = ((r + c) % 2) == 0 
+                self.draw_cell(c, r, even, theme)
 
 
-
-    def draw_cell(self, x, y, color):
-        pygame.draw.rect(self.window, color, pygame.Rect(x * UI.SCALE, y * UI.SCALE, UI.SCALE, UI.SCALE))
-        pygame.draw.rect(self.window, self.COLOR_CELL_BORDER, pygame.Rect(x * UI.SCALE, y * UI.SCALE, UI.SCALE, UI.SCALE),1)
+    def draw_cell(self, x, y, even, theme):
+        if theme == "default":
+            color = self.COLOR_CELL_EVEN if even else self.COLOR_CELL_ODD
+            pygame.draw.rect(self.window, color, pygame.Rect(x * UI.SCALE, y * UI.SCALE, UI.SCALE, UI.SCALE))
+            pygame.draw.rect(self.window, self.COLOR_CELL_BORDER, pygame.Rect(x * UI.SCALE, y * UI.SCALE, UI.SCALE, UI.SCALE),1)
+        else:
+            try:
+                cell = "even" if even else "odd"
+                image = pygame.image.load(f"TicTacToe/img/cell-{theme}-{cell}.png")
+                image = pygame.image.scale(image, (UI.SCALE, UI.SCALE))
+                self.draw_cell_image(x,y,image)
+            except:
+                pass
 
 
     def draw_cell_image(self, x, y, image):
         self.window.blit(image, (x * UI.SCALE, y * UI.SCALE,))
 
-    def draw_pieces(self, game):
+    def draw_pieces(self, game, theme="default"):
         for r in range(self.rows):
             for c in range(self.cols):
                 if game.board[r][c] == 'O':
-                    self.draw_O(c, r)
+                    self.draw_O(c, r, theme)
                 elif game.board[r][c] == 'X':
-                    self.draw_X(c, r)
+                    self.draw_X(c, r, theme)
 
-    def draw_O(self, x, y, style="flat"):
+    def draw_O(self, x, y, theme):
 
-        if self.style == "default":
-            x_center_px, y_center_px, radius_px = x * UI.SCALE + UI.SCALE / 2, y * UI.SCALE + UI.SCALE / 2, (UI.SCALE / 2) * 0.8
-            pygame.draw.circle(self.window, self.COLOR_O, (x_center_px, y_center_px), radius_px, 0)
-            pygame.draw.circle(self.window, self.COLOR_O_BORDER, (x_center_px, y_center_px), radius_px, 1)
-        elif self.style == "flat":
-            size_px = (UI.SCALE) * 0.8
-            x_corner_px, y_corner_px = x * UI.SCALE + (UI.SCALE - size_px) / 2, y * UI.SCALE + (UI.SCALE - size_px) / 2
-            O = pygame.image.load('TicTacToe/img/O.png')
-            O = pygame.transform.scale(O, (size_px, size_px))
+        if self.theme == "default":
+            size_px, offset = (UI.SCALE) * 0.8, 3
+            x_center_px, y_center_px, radius_px = x * UI.SCALE + UI.SCALE / 2, y * UI.SCALE + UI.SCALE / 2, size_px / 2
+            pygame.draw.circle(self.window, self.COLOR_O_SHADOW, (x_center_px -offset , y_center_px + offset ), radius_px, int(radius_px/2))
+            pygame.draw.circle(self.window, self.COLOR_O, (x_center_px, y_center_px), radius_px, int(radius_px/2)) 
+        else:
+            x_corner_px, y_corner_px = x * UI.SCALE , y * UI.SCALE
+            O = pygame.image.load(f'TicTacToe/img/O-{theme}.png')
+            O = pygame.transform.scale(O, (UI.SCALE, UI.SCALE))
             O = O.convert_alpha()
             self.window.blit(O, (x_corner_px, y_corner_px))
 
 
-    def draw_X(self, x, y):
-        size_px = (UI.SCALE) * 0.8
-        x_corner_px, y_corner_px = x * UI.SCALE + (UI.SCALE - size_px) / 2, y * UI.SCALE + (UI.SCALE - size_px) / 2
-        pygame.draw.rect(self.window, self.COLOR_X, pygame.Rect(x_corner_px, y_corner_px, size_px, size_px), 0)
-        pygame.draw.rect(self.window, self.COLOR_X_BORDER, pygame.Rect(x_corner_px, y_corner_px, size_px, size_px),1)
-
-        X = pygame.image.load('TicTacToe/img/X.png')
-        X = pygame.transform.scale(X, (size_px, size_px))
-        X = X.convert_alpha()
-        self.window.blit(X, (x_corner_px, y_corner_px))
+    def draw_X(self, x, y, theme):
+        if self.theme == "default":
+            size_px = (UI.SCALE) * 0.8
+            offset = 3
+            x_corner_px, y_corner_px = x * UI.SCALE + (UI.SCALE - size_px) / 2, y * UI.SCALE + (UI.SCALE - size_px) / 2
+            pygame.draw.rect(self.window, self.COLOR_X, pygame.Rect(x_corner_px -offset, y_corner_px +offset, size_px, size_px), int(size_px/4)) 
+            pygame.draw.rect(self.window, self.COLOR_X_SHADOW, pygame.Rect(x_corner_px, y_corner_px, size_px, size_px), int(size_px/4))      
+        else:
+            x_corner_px, y_corner_px = x * UI.SCALE , y * UI.SCALE
+            X = pygame.image.load(f'TicTacToe/img/X-{theme}.png')
+            X = pygame.transform.scale(X, (UI.SCALE, UI.SCALE))
+            X = X.convert_alpha()
+            self.window.blit(X, (x_corner_px, y_corner_px))
 
     def draw_score(self, game):
         font = pygame.font.SysFont('Courier', self.FONT_SIZE, bold=True)

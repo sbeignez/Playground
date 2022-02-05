@@ -17,14 +17,14 @@ class TicTacToe(Env):
         self.board = [[TicTacToe.BOARD_EMPTY for _ in range(3)] for _ in range(3)]
         self.players = [
                 (TicTacToe.BOARD_X, HumanAgent()),
-                (TicTacToe.BOARD_O, ChanceMinimaxAgent()),
+                (TicTacToe.BOARD_O, [RandomAgent(), ChanceMinimaxAgent()][0]),
             ]
         self.player = self.players[random.randint(0,1)]
 
         self.display_mode = ["Text", "GUI"][1]
 
         if self.display_mode == "GUI":
-            self.ui = UI()
+            self.ui = UI(theme=["default","pacman", "mario"][1])
 
     def reset(self):
         pass
@@ -221,7 +221,8 @@ class RandomAgent(Agent):
 
     def next_move(self, game):
         print("Random move. ", end="")
-        return random.choice(game.board.actions())
+        state = game.board, game.player[0]
+        return random.choice(TicTacToe.actions(state))
 
 class CompositeAgent(Agent):
 
