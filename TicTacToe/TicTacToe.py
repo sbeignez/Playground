@@ -17,14 +17,14 @@ class TicTacToe(Env):
         self.board = [[TicTacToe.BOARD_EMPTY for _ in range(3)] for _ in range(3)]
         self.players = [
                 (TicTacToe.BOARD_X, HumanAgent()),
-                (TicTacToe.BOARD_O, [RandomAgent(), ChanceMinimaxAgent()][0]),
+                (TicTacToe.BOARD_O, [RandomAgent(), ChanceMinimaxAgent()][1]),
             ]
         self.player = self.players[random.randint(0,1)]
 
         self.display_mode = ["Text", "GUI"][1]
 
         if self.display_mode == "GUI":
-            self.ui = UI(theme=["default","pacman", "mario"][1])
+            self.ui = UI(theme=["default","pacman", "mario"][2])
 
     def reset(self):
         pass
