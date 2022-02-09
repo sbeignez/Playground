@@ -13,12 +13,12 @@ class MapColoring(CSP):
     def __init__(self):
         self.variables = ["WA", "NT", "Q", "NSW", "V", "SA", "T"]
         self.domains = {
-            "WA" : ["red", "green", "blue"],
+            "WA" : ["red", "green", ],
             "NT" : ["red", "green", "blue"],
             "Q"  : ["red", "green", "blue"],
             "NSW": ["red", "green", "blue"],
             "V"  : ["red", "green", "blue"],
-            "SA" : ["red", "green", ],
+            "SA" : [ "green", ],
             # "T"  : ["red", "green", "blue"],
         }
         self.constraints = {
