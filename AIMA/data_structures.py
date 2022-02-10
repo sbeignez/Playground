@@ -22,7 +22,7 @@ class Node():
     def __init__(self, state=None):
         self.state = state
     def __repr__(self):
-        return f"({self.state})"
+        return f"N<{self.state}>"
 
 
 class TreeNode(Node):
@@ -35,7 +35,7 @@ class TreeNode(Node):
         self.path_cost: int = path_cost
 
     def __repr__(self):
-        return f"({self.state})"
+        return f"N<{self.state}, {self.path_cost}>"
 
     def __lt__(self, other):
         return self.state < other.state

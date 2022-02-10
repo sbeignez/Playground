@@ -1,3 +1,4 @@
+from tkinter import Grid
 import typing
 
 import heapq
@@ -9,16 +10,12 @@ from problem_grid import *
 
 
 
-
-
 def BestFirstSearch(problem: Problem, f) -> Node:
 
     node = TreeNode(problem.initial_state(), None, None, 0)
     frontier = [node]
     heapq.heapify(frontier)
-    print("Frontier", frontier)
     reached = { problem.initial_state() : node }
-    print("Reached", reached)
 
     while frontier:
         node = heapq.heappop(frontier)
@@ -46,6 +43,28 @@ def expand(problem: Problem, node: Node) -> list[Node]:
     return nodes
 
 
+# -----------------------------------------------------------------------------
+
+from collections import deque
+
+def breadth_first_tree_search(problem):
+
+    def expand(problem, node):
+        return [ TreeNode(state=problem.result(node.state, action), parent=node, action=action, path_cost=node.path_cost + 1) for action in problem.actions(node.state) ]
+
+    frontier = deque() # NODES
+    frontier.append(TreeNode(state=problem.initial_state() , parent=None, action=None, path_cost=0))
+
+    while frontier:
+        node = frontier.popleft()
+        if problem.is_goal_states(node.state):
+                return node  # Goal
+        frontier.extend(expand(problem, node))
+
+    return None  # Fail
+
+
+
 
 problem = GridProblem()
 node= BestFirstSearch(problem, None)
@@ -53,7 +72,10 @@ node= BestFirstSearch(problem, None)
 print(Tree.path(node))
 print(Tree.actions_sequence(node))
 
-
+print("="*20)
+node = breadth_first_tree_search(GridProblem())
+print(Tree.path(node))
+print(Tree.actions_sequence(node))
 
 
 

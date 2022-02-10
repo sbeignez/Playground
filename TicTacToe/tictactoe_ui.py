@@ -52,7 +52,7 @@ class UI():
         self.action_key = None
 
 
-    def draw_ui(self, game):
+    def draw_ui(self, game, state):
 
         # Erase
         self.erase_ui()

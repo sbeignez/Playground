@@ -8,8 +8,8 @@ class Move(Action):
     def __repr__(self):
         s = ""
         if self.x == 1: s = "RIGHT"
-        if self.x == -1: s = "LEFT_"
-        if self.y == 1: s = "UP___"
+        if self.x == -1: s = "LEFT"
+        if self.y == 1: s = "UP"
         if self.y == -1: s = "DOWN_"
         return f"A:{s}"
 
