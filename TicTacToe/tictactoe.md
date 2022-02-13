@@ -16,13 +16,56 @@ function min and max called: 549,946 times = nodes
 terminal leaves: 255,168 = games
 
 
+## 1. Transposition Tables
 
-### Symmetry reduction
+
+
+## Zobrist hashing 
+
+- avoid recomputing values for states
+- use hash table : [state, value, ply-used]
+- hash value can be efficiently computed __incrementally__
+
+The Zobrist hash value of a state $s$: $Z(s)$  
+State s is represented as an array of $n$ propositions $ s = (x_0, x_1, x_2, ..., x_n) $  
+Let R be a table of pre-initialized random bit strings  
+
+$$ Z(s) := R[x_0] xor R[x_1] xor R[x_2] xor ... xor R[x_n]$$
+
+
+``` 
+import random
+zobTable = [[[random.randint(1,2**64 - 1) for i in range(12)]for j in range(8)]for k in range(8)]
+
+def computeHash(board):
+    h = 0
+    for i in range(8):
+        for j in range(8):
+           # print board[i][j]
+            if board[i][j] != '-': # '-' for empty
+                piece = indexing(board[i][j])
+                h ^= zobTable[i][j][piece]
+    return h
+```
+
+Zobrist Hashing (ZHDA*): $ R_i[x_i] $ What is R_i? https://www.slideshare.net/JinnaiYuu/jinnai-fukunaga2016
+
+### A Group-Theoretic Zobrist Hash Function
+http://fragrieu.free.fr/zobrist.pdf  
+
+The dihedral group of a square  
+a, rotation 90  
+b, symmetry on y axis  
+$S_{sym} = { 1, a, a^2, a^3, b, b, ba, ba^2, ba^3}$
+
+## 2. Symmetry reduction
 
 Reduction of the search space 
-When 2 states are symetric?
-isomorphic ?
 
+When 2 states are symetric? isomorphic ?
+
+* Symmetry/Rotation of the Board
+* Permutation of the Moves sequence
 
 rotation, reflection, and/or flip
 symmetry group of a square.
@@ -36,6 +79,16 @@ https://en.wikipedia.org/wiki/Zobrist_hashing
 
 Group theory is the mathematical study of symmetry
 https://www2.math.upenn.edu/~mlazar/math170/notes07.pdf
+
+Symmetry
+- invariants
+- permutation
+- p(s) = s
+
+
+
+
+
 
 
 

@@ -59,8 +59,8 @@ class UI():
 
         # Draw UI elements
         self.draw_board(theme=self.theme)
-        self.draw_pieces(game, theme=self.theme)
-        self.draw_score(game)
+        self.draw_pieces(game, state, theme=self.theme)
+        self.draw_score(game, state)
 
         # self.get_keyboard_events()
         # Update Diplay
@@ -106,12 +106,12 @@ class UI():
     def draw_cell_image(self, x, y, image):
         self.window.blit(image, (x * UI.SCALE, y * UI.SCALE,))
 
-    def draw_pieces(self, game, theme="default"):
+    def draw_pieces(self, game, state, theme="default"):
         for r in range(self.rows):
             for c in range(self.cols):
-                if game.board[r][c] == 'O':
+                if state.board[r][c] == 'O':
                     self.draw_O(c, r, theme)
-                elif game.board[r][c] == 'X':
+                elif state.board[r][c] == 'X':
                     self.draw_X(c, r, theme)
 
     def draw_O(self, x, y, theme):
@@ -143,12 +143,12 @@ class UI():
             X = X.convert_alpha()
             self.window.blit(X, (x_corner_px, y_corner_px))
 
-    def draw_score(self, game):
+    def draw_score(self, game, state):
         font = pygame.font.SysFont('Courier', self.FONT_SIZE, bold=True)
 
         texts = [
             "TIC TAC TOE",
-            f"PLAYER: {game.player[0]} {game.player[1].name}",
+            f"PLAYER: {state.player} {game.AGENTS[state.player].name}",
         ]
 
         for line_number, text in enumerate(texts):

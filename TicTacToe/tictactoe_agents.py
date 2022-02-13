@@ -4,6 +4,7 @@ import math
 import time
 from tictactoe_ui import UI
 # from tictactoe import State
+# from tictactoe import State
 
 
 
@@ -32,7 +33,7 @@ class CompositeAgent(Agent):
         super().__init__()
         self.agents = agents
 
-    def next_move(self, state):
+    def next_move(self, game, state):
         self.epsilon = 0.1
         coin = random.uniform(0, 1)
         if coin < self.epsilon:
@@ -49,7 +50,7 @@ class MinimaxAgent(Agent):
         self.name = "Minimax"
 
     def next_move(self, game, state):
-        state = copy.deepcopy(state.board), state.player
+        # state = copy.deepcopy(state.board), state.player
         value, move = MinimaxAgent.minimax_search(game, state)
         print("Minimax(" + str(value) + ") " + str(MinimaxAgent.count) + " ", end="")
         return move
@@ -171,14 +172,17 @@ class HumanAgent(Agent):
         return action
 
     def input_move_gui(self, game, state):
+        action = None
         while action is None:
-            action = game.ui.get_cell()
-            if game.is_valid_action(action):
+            cell = game.ui.get_cell()
+            if game.is_valid_action(cell):
+                action = cell
                 print(game.rowcol_to_cell(action))
         return action
 
 
-
+class BFS_Grapg(Agent):
+    pass
 
 
 

@@ -20,15 +20,19 @@ class TicTacToe(Env):
     PLAYERS = [BOARD_X,  BOARD_O]
     AGENTS = {
         BOARD_X : [HumanAgent()][0],
-        BOARD_O : [RandomAgent(), ChanceMinimaxAgent()][0],
+        BOARD_O : [RandomAgent(), MinimaxAgent()][1],
     }
     
-    def __init__(self):
+    def __init__(self, m=3, n=3, k=3):
 
-        self.board = [[TicTacToe.BOARD_EMPTY for _ in range(3)] for _ in range(3)]
-        self.initial_state = State(self.board, TicTacToe.PLAYERS[random.randint(0,1)], 0)
+        self.cols = m
+        self.rows = n
+        self.k = k
 
-        self.display_mode = ["Text", "GUI"][1]
+        self.board = [[TicTacToe.BOARD_EMPTY for _ in range(self.cols)] for _ in range(self.rows)]
+        self.initial_state = State(board= self.board, player= TicTacToe.PLAYERS[random.randint(0,1)], utility= 0)
+
+        self.display_mode = ["Text", "GUI"][0]
 
         if self.display_mode == "GUI":
             self.ui = UI(theme=["default","pacman", "mario"][2])
@@ -101,8 +105,9 @@ class TicTacToe(Env):
             return None
 
     def rowcol_to_cell(self, action):
-        row, col = action
-        return chr(ord("A") + col) + str(3-row)
+        if action != (None, None):
+            row, col = action
+            return chr(ord("A") + col) + str(3-row)
         
 
     def start(self):
@@ -209,10 +214,10 @@ class TicTacToe(Env):
 
 
 
+if __name__ == "__main__":
+    game = TicTacToe()
+    game.start()
 
-
-env = TicTacToe()
-env.start()
 
 
 
